@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Design tokens ────────────────────────────────────────────────────────────
+   Dark-first, oklch color space. The `--brand*` variables are runtime-
+   overridable per tenant (Branding settings / tenant.branding) — the UI
+   re-skins without a rebuild.                                              */
+
+:root {
+  --radius: 0.625rem;
+
+  /* Neutral surface ramp (light) */
+  --background: oklch(0.985 0.002 247);
+  --surface: oklch(1 0 0);
+  --card: oklch(1 0 0);
+  --card-elevated: oklch(0.995 0.001 247);
+  --muted: oklch(0.955 0.004 247);
+  --muted-foreground: oklch(0.55 0.016 257);
+  --foreground: oklch(0.21 0.02 262);
+  --border: oklch(0.915 0.008 255);
+  --ring: oklch(0.62 0.18 265);
+  --overlay: oklch(0.21 0.02 262 / 0.45);
+
+  /* Semantic */
+  --success: oklch(0.72 0.17 152);
+  --success-soft: oklch(0.72 0.17 152 / 0.12);
+  --warning: oklch(0.78 0.16 84);
+  --warning-soft: oklch(0.78 0.16 84 / 0.14);
+  --danger: oklch(0.63 0.21 22);
+  --danger-soft: oklch(0.63 0.21 22 / 0.12);
+  --info: oklch(0.68 0.14 235);
+  --info-soft: oklch(0.68 0.14 235 / 0.12);
+
+  /* Brand (default: indigo) — tenant branding overrides these at runtime. */
+  --brand: oklch(0.56 0.213 277);
+  --brand-strong: oklch(0.51 0.217 277);
+  --brand-soft: oklch(0.56 0.213 277 / 0.12);
+  --brand-foreground: oklch(1 0 0);
+  /* Lighter brand for text/links on dark surfaces (AAA-ish against --background). */
+  --brand-text: color-mix(in oklab, var(--brand) 62%, white);
+  --brand-ring: oklch(0.56 0.213 277 / 0.4);
+
+  /* Chart ramp — a brand-derived sequential scale so data viz re-skins with
+     tenant branding and stays in the same color family (no rainbow charts). */
+  --chart-1: var(--brand);
+  --chart-2: color-mix(in oklab, var(--brand) 74%, transparent);
+  --chart-3: color-mix(in oklab, var(--brand) 56%, transparent);
+  --chart-4: color-mix(in oklab, var(--brand) 42%, transparent);
+  --chart-5: color-mix(in oklab, var(--brand) 30%, transparent);
+  --chart-6: color-mix(in oklab, var(--brand) 20%, transparent);
+}
+
+.dark {
+  --background: oklch(0.165 0.014 262);
+  --surface: oklch(0.198 0.016 262);
+  --card: oklch(0.198 0.016 262);
+  --card-elevated: oklch(0.225 0.018 262);
+  --muted: oklch(0.26 0.016 261);
+  --muted-foreground: oklch(0.705 0.014 258);
+  --foreground: oklch(0.965 0.004 247);
+  --border: oklch(0.28 0.016 261);
+  --ring: oklch(0.62 0.18 265);
+  --overlay: oklch(0.1 0.01 262 / 0.6);
+
+  --success: oklch(0.75 0.17 155);
+  --success-soft: oklch(0.75 0.17 155 / 0.14);
+  --warning: oklch(0.82 0.16 85);
+  --warning-soft: oklch(0.82 0.16 85 / 0.14);
+  --danger: oklch(0.75 0.17 22);
+  --danger-soft: oklch(0.68 0.19 22 / 0.14);
+  --info: oklch(0.72 0.13 235);
+  --info-soft: oklch(0.72 0.13 235 / 0.14);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-elevated: var(--card-elevated);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-text: var(--brand-text);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-elevated: 0 2px 4px -1px rgb(0 0 0 / 0.08), 0 6px 16px -4px rgb(0 0 0 / 0.12);
+  --shadow-pop: 0 8px 30px -8px rgb(0 0 0 / 0.28), 0 2px 8px -2px rgb(0 0 0 / 0.18);
+
+  --animate-fade-in: fade-in 0.18s ease-out;
+  --animate-slide-up: slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(6px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--brand-soft);
+}
+
+/* Slim, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Brand-tinted focus ring for interactive elements */
+.focus-brand {
+  outline: none;
+}
+.focus-brand:focus-visible {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--brand-ring);
+}
+
+/* Subtle top highlight used on elevated cards */
+.card-sheen {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(1 0 0 / 0.04),
+    transparent 40%
+  );
+}

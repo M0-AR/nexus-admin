@@ -1,0 +1,43 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# generated code (Prisma client)
+backend/src/generated/
+
+# env files — never commit real secrets
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env.local
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# docker overrides
+docker-compose.override.yml
+
+# test artifacts
+backend/test/.containers.json
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.auth/

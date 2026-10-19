@@ -1,0 +1,293 @@
+// Nexus Admin schema.
+//
+// Control-plane tables (tenants, users, subscriptions, refresh tokens) are
+// platform-owned and not row-level-secured. Every tenant-scoped table carries
+// tenant_id and is protected by FORCE row-level security — see migration
+// 0002_rls_tenant_isolation for policies and grants. The runtime role
+// (app_user) has NOBYPASSRLS and always queries inside a transaction that has
+// set app.tenant_id via set_config(..., true).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────── enums ───────────────────────────
+
+enum TenantStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+}
+
+enum PlanTier {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum IsolationMode {
+  SHARED
+  DEDICATED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  REFUNDED
+  CANCELLED
+  FAILED
+}
+
+enum OrderChannel {
+  DIRECT
+  ORGANIC
+  REFERRAL
+  SOCIAL
+  PARTNER
+  EMAIL
+}
+
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum NotificationType {
+  USER
+  PAYMENT
+  ALERT
+  REPORT
+  SYSTEM
+}
+
+// ─────────────────────── control plane ───────────────────────
+
+model Tenant {
+  id                     String        @id @default(uuid()) @db.Uuid
+  slug                   String        @unique
+  name                   String
+  status                 TenantStatus  @default(PROVISIONING)
+  plan                   PlanTier      @default(STARTER)
+  isolationMode          IsolationMode @default(SHARED)
+  dedicatedDatabaseUrl   String?       @map("dedicated_database_url")
+  dataRegion             String        @default("us-east-1") @map("data_region")
+  customDomain           String?       @unique @map("custom_domain")
+  customDomainVerified   Boolean       @default(false) @map("custom_domain_verified")
+  domainVerificationToken String?      @map("domain_verification_token")
+  branding               Json          @default("{}")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  memberships      Membership[]
+  subscription     Subscription?
+  featureOverrides FeatureOverride[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  avatarColor  String   @default("#6366f1") @map("avatar_color")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  memberships   Membership[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Membership {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  role      MembershipRole   @default(MEMBER)
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  family      String    @db.Uuid
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  replacedBy  String?   @map("replaced_by") @db.Uuid
+  userAgent   String?   @map("user_agent")
+  ip          String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@map("refresh_tokens")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  tenantId             String             @unique @map("tenant_id") @db.Uuid
+  plan                 PlanTier           @default(STARTER)
+  status               SubscriptionStatus @default(TRIALING)
+  seats                Int                @default(5)
+  currentPeriodEnd     DateTime           @map("current_period_end")
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @map("stripe_subscription_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// ────────────────── tenant-scoped (RLS FORCED) ──────────────────
+
+model FeatureOverride {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  feature   String
+  enabled   Boolean
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, feature])
+  @@map("feature_overrides")
+}
+
+model Order {
+  id        String       @id @default(uuid()) @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  number    String
+  customer  String
+  email     String?
+  product   String
+  channel   OrderChannel @default(DIRECT)
+  amount    Decimal      @db.Decimal(12, 2)
+  currency  String       @default("USD")
+  status    OrderStatus  @default(PENDING)
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@unique([tenantId, number])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+  @@map("orders")
+}
+
+model Product {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  name      String
+  sku       String
+  price     Decimal       @db.Decimal(12, 2)
+  stock     Int           @default(0)
+  status    ProductStatus @default(DRAFT)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@unique([tenantId, sku])
+  @@map("products")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  type      NotificationType @default(SYSTEM)
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  actorEmail String?  @map("actor_email")
+  action     String
+  entity     String?
+  entityId   String?  @map("entity_id")
+  meta       Json?
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+model UsageRecord {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  metric   String
+  quantity Int
+  day      DateTime @map("day") @db.Date
+
+  @@unique([tenantId, metric, day])
+  @@index([tenantId, day])
+  @@map("usage_records")
+}
+
+model IntegrationSecret {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  key            String
+  valueEncrypted String   @map("value_encrypted")
+  lastRotatedAt  DateTime @default(now()) @map("last_rotated_at")
+
+  @@unique([tenantId, key])
+  @@map("integration_secrets")
+}
+
+model TenantKey {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @unique @map("tenant_id") @db.Uuid
+  wrappedDek String   @map("wrapped_dek")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("tenant_keys")
+}
