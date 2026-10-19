@@ -18,6 +18,8 @@ Nexus Admin is a complete back office for a multi-tenant SaaS product. One polis
 
 It is the admin panel you would otherwise spend months assembling: authentication, roles, tenant context, rate limits, metering, audit, theming and a test suite that actually proves the dangerous parts.
 
+**Live showcase:** [Home](https://m0-ar.github.io/nexus-admin/) · [Quick preview](https://m0-ar.github.io/nexus-admin/preview.html) · [Docs preview](https://m0-ar.github.io/nexus-admin/docs/preview.html)
+
 New to multi-tenant SaaS? Start with the [🌱 Beginner guide](#-beginner-guide--read-this-and-you-are-a-professional).
 
 ## Why teams pick it
@@ -430,17 +432,27 @@ docs/
 
 ## Interactive showcase & GitHub Pages
 
-`docs/index.html` is a standalone, interactive tour of the product: feature explorer, architecture walkthrough, pricing, screenshots and a short quiz that takes a newcomer from zero to confident. It uses no external libraries and works offline. A copy lives at `preview.html` in the repository root for quick local viewing.
+`docs/index.html` is the canonical standalone, interactive tour of the product: feature explorer, architecture walkthrough, pricing, screenshots and a short quiz that takes a newcomer from zero to confident. It uses no external libraries and works offline.
 
-To publish it:
+**Live pages** (published from `main` / repository root):
+
+| Route | Open in browser | What it is |
+|---|---|---|
+| `/` | [m0-ar.github.io/nexus-admin/](https://m0-ar.github.io/nexus-admin/) | Showcase home |
+| `/preview.html` | [m0-ar.github.io/nexus-admin/preview.html](https://m0-ar.github.io/nexus-admin/preview.html) | Root mirror of the showcase |
+| `/docs/preview.html` | [m0-ar.github.io/nexus-admin/docs/preview.html](https://m0-ar.github.io/nexus-admin/docs/preview.html) | Docs-folder mirror |
+
+All three routes render the same showcase. Root `index.html` redirects to `/preview.html`, and `docs/preview.html` redirects to the canonical docs page. `.nojekyll` is present at both the repository root and in `docs/` so the files are served exactly as written.
+
+To publish:
 
 1. Push the repository to GitHub.
 2. Open **Settings → Pages**.
 3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select branch `main` and folder `/docs`, then save.
-5. Open `https://<your-user>.github.io/<repository>/`.
+4. Select branch `main` and folder **`/ (root)`**, then save. The root source is required for all three URLs above; switching to `/docs` removes the `/docs/preview.html` route.
+5. Open `https://m0-ar.github.io/nexus-admin/`.
 
-`docs/.nojekyll` is included so the site is served exactly as written. For a richer link preview, upload `docs/assets/social-preview.png` (1280×640, under 1 MB) in **Settings → Social preview**.
+For a richer link preview, upload `docs/assets/social-preview.png` (1280×640, under 1 MB) in **Settings → Social preview**.
 
 ## FAQ
 
